@@ -1,13 +1,37 @@
 #/bin/bash
+
+function install_dependencies {
+	echo "Installing dependencies..."
+	if [ ! -x /usr/bin/lsb_release ] && [ /etc/lsb-release ]; then 
+	dependencies=$dependencies" lsb-release"
+	fi
+
+	if [ ! -x /usr/bin/figlet ]; then 
+	dependencies=$dependencies" figlet"
+	fi
+
+	if [[ -z `dpkg -s python-apt 2> /dev/null | grep installed` ]]; then 
+			dependencies=$dependencies" python-apt"
+	fi
+
+	if [ ! -z `echo $dependencies` ]; then
+		apt-get update
+		apt-get -y install$dependencies
+	fi
+}
+
+
+
 echo -n "Setting up directories..."
 if [ ! -d /etc/update-motd.d ]; then
 		mkdir /etc/update-motd.d
 else 
 	echo "Previous configuration detected. ¿Remove it? (Note that some files might get overwritten if not)"
-	select yn in "Yes" "No"; do
+	select yn in "Yes" "No" "Exit"; do
 		case $yn in
 			Yes ) rm -r /etc/update-motd.d; mkdir /etc/update-motd.d; break;;
 			No ) break;;
+			Exit ) exit;;
 		esac
 	done
 fi
@@ -15,12 +39,9 @@ fi
 
 echo "Done."
 
-echo "Installing dependencies..."
-apt-get update
-apt-get -y install figlet lsb-release python python-apt
+install_dependencies
 
-
-echo "\n"
+echo "\\n"
 echo "---------------------------------"
 echo "Setting up update-motd.d files..."
 echo "---------------------------------"
@@ -102,6 +123,7 @@ echo "Done."
 
 
 echo -n "Setting up 20-updates..."
+
 echo "#!/usr/bin/python
 #
 #   20-updates - create the system updates section of the MOTD
