@@ -1,14 +1,24 @@
 #/bin/bash
+echo -n "Setting up directories..."
+if [ ! -d /etc/update-motd.d ]; then
+		mkdir /etc/update-motd.d
+else 
+	echo "Previous configuration detected. ¿Remove it? (Note that some files might get overwritten if not)"
+	select yn in "Yes" "No"; do
+		case $yn in
+			Yes ) rm -r /etc/update-motd.d; mkdir /etc/update-motd.d; break;;
+			No ) break;;
+		esac
+	done
+fi
+
+
+echo "Done."
+
 echo "Installing dependencies..."
 apt-get update
 apt-get -y install figlet lsb-release python python-apt
 
-echo -n "Setting up directories..."
-if [ ! -a /etc/update-motd.d ]
-	then
-		mkdir /etc/update-motd.d
-fi
-echo "Done."
 
 echo "\n"
 echo "---------------------------------"
@@ -210,6 +220,7 @@ print \"%d are security updates.\" % security_upgrades
 print \"\" # leave a trailing blank line"> /etc/update-motd.d/20-updates
 echo "Done."
 
+echo -n "Setting up 99-footer..."
 echo "#!/bin/sh
 #
 #    99-footer - write the admin's footer to the MOTD
@@ -234,7 +245,7 @@ echo "#!/bin/sh
 #    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 [ -f /etc/motd.tail ] && cat /etc/motd.tail || true" > /etc/update-motd.d/99-footer
-
+echo "Done."
 
 echo -n "Setting file permissions..."
 chmod u+x /etc/update-motd.d/*
