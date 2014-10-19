@@ -122,7 +122,7 @@ echo" > /etc/update-motd.d/10-sysinfo
 echo "Done."
 
 
-echo -n "Setting up 20-updates..."
+echo -n "Setting up (cached) 20-updates..."
 
 echo "#!/usr/bin/python
 #
@@ -239,7 +239,47 @@ for pkg in cache.packages:
 
 print \"%d updates to install.\" % upgrades
 print \"%d are security updates.\" % security_upgrades
-print \"\" # leave a trailing blank line"> /etc/update-motd.d/20-updates
+print \"\" # leave a trailing blank line"> /etc/update-motd.d/updates.py
+
+echo "#!/bin/sh
+#
+#    20-updates - manages the system updates section of the MOTD
+#    Copyright (c) 2014 Diego Muñoz Callejo
+#    Copyright (c) 2009-2010 Canonical Ltd.
+#
+#    Authors: Diego Muñoz Callejo <dmcelectrico@gmail.com>
+#             Dustin Kirkland <kirkland@canonical.com>
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License along
+#    with this program; if not, write to the Free Software Foundation, Inc.,
+#    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+out=/etc/update-motd.d/updates.cache
+script=\"/etc/update-motd.d/updates.py\"
+if [ -f \"\$out\" ]; then
+	# Output exists, print it
+	echo
+	cat \"\$out\"
+	# See if it's expired, and background update
+	lastrun=\$(stat -c \%Y \"\$out\") || lastrun=0
+	expiration=\$(expr \$lastrun + 43200)
+	if [ \$(date +\%s) -ge \$expiration ]; then
+		\$script > \"\$out\" &
+	fi
+else
+	# No cache at all, so update in the background
+	\$script > \"\$out\" &
+fi
+"> /etc/update-motd.d/20-updates
 echo "Done."
 
 echo -n "Setting up 99-footer..."
@@ -274,6 +314,7 @@ chmod u+x /etc/update-motd.d/*
 echo "Done."
 
 echo -n "Setting new motd..."
+
 rm /etc/motd
 ln -s /var/run/motd /etc/motd
 echo "Done."
@@ -284,5 +325,6 @@ echo "--------------------------"
 
 /etc/update-motd.d/00-header
 /etc/update-motd.d/10-sysinfo
-/etc/update-motd.d/20-updates
+/etc/update-motd.d/20-updates	#This creates the updates.cache file
+/etc/update-motd.d/updates.py	#And this shows the section (with the obvious delay)
 /etc/update-motd.d/99-footer
